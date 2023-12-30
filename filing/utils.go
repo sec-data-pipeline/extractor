@@ -1,15 +1,12 @@
-package utils
+package filing
 
 import (
-	"strconv"
 	"strings"
 	"time"
-
-	"github.com/sec-data-pipeline/extractor/models"
 )
 
-func TransfromFilings(data *models.FilingsResponse) []models.Filing {
-	filings := []models.Filing{}
+func TransfromFilings(data *FilingsResponse) []Filing {
+	filings := []Filing{}
 	for i, v := range data.Filings.Recent.Form {
 		if len(v) < 4 {
 			continue
@@ -17,9 +14,9 @@ func TransfromFilings(data *models.FilingsResponse) []models.Filing {
 		if v[:3] != "10-" {
 			continue
 		}
-		filing := models.Filing{}
+		filing := Filing{}
 		filing.SECID = transformID(data.Filings.Recent.AccessionNumber[i])
-		filing.Size = data.Filings.Recent.Size[i]
+		filing.RawID = data.Filings.Recent.AccessionNumber[i]
 		filing.Form = v
 		fd, err := time.Parse("2006-01-02", data.Filings.Recent.FilingDate[i])
 		if err != nil {
@@ -41,15 +38,10 @@ func TransfromFilings(data *models.FilingsResponse) []models.Filing {
 	return filings
 }
 
-func TransformFiles(data *models.FilesResponse) []models.File {
-	files := []models.File{}
+func TransformFiles(data *FilesResponse) []File {
+	files := []File{}
 	for _, v := range data.Dir.Items {
-		file := models.File{Name: v.Name}
-		size, err := strconv.Atoi(v.Size)
-		if err != nil {
-			size = 0
-		}
-		file.Size = size
+		file := File{Name: v.Name}
 		lm, err := time.Parse("2006-01-02 15:04:05", v.LastModified)
 		if err != nil {
 			lm = time.Time{}
@@ -62,4 +54,29 @@ func TransformFiles(data *models.FilesResponse) []models.File {
 
 func transformID(apiID string) string {
 	return strings.Replace(apiID, "-", "", -1)
+}
+
+func MissingFilings(localFilings []Filing, newFilings []Filing) []Filing {
+	missing := []Filing{}
+outer:
+	for _, newFiling := range newFilings {
+		for _, localFiling := range localFilings {
+			if newFiling.SECID == localFiling.SECID {
+				continue outer
+			}
+		}
+		missing = append(missing, newFiling)
+	}
+	return missing
+}
+
+func GetFileExtension(fileName string) string {
+	result := ""
+	for i := len(fileName) - 1; i >= 0; i-- {
+		result = string(fileName[i]) + result
+		if string(fileName[i]) == "." {
+			break
+		}
+	}
+	return result
 }

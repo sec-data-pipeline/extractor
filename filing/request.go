@@ -1,11 +1,10 @@
-package request
+package filing
 
 import (
 	"encoding/json"
 	"io"
 	"net/http"
-
-	"github.com/sec-data-pipeline/extractor/models"
+	"time"
 )
 
 const (
@@ -13,8 +12,8 @@ const (
 	apiURL  = "https://data.sec.gov/submissions/CIK"
 )
 
-func GetFilingsData(company *models.Company) (*models.FilingsResponse, error) {
-	req, err := buildRequest(apiURL + company.CIK + ".json")
+func GetFilingsData(cik string) (*FilingsResponse, error) {
+	req, err := buildRequest(apiURL + cik + ".json")
 	if err != nil {
 		return nil, err
 	}
@@ -29,9 +28,9 @@ func GetFilingsData(company *models.Company) (*models.FilingsResponse, error) {
 	return data, nil
 }
 
-func GetFilesData(filing *models.Filing) (*models.FilesResponse, error) {
+func GetFilesData(cik string, secID string) (*FilesResponse, error) {
 	req, err := buildRequest(
-		baseURL + filing.Company.CIK + "/" + filing.SECID + "/index.json",
+		baseURL + cik + "/" + secID + "/index.json",
 	)
 	if err != nil {
 		return nil, err
@@ -47,9 +46,9 @@ func GetFilesData(filing *models.Filing) (*models.FilesResponse, error) {
 	return data, nil
 }
 
-func GetFileContent(file *models.File) ([]byte, error) {
+func GetFileContent(cik string, secID string, name string) ([]byte, error) {
 	req, err := buildRequest(
-		baseURL + file.Filing.Company.CIK + "/" + file.Filing.SECID + "/" + file.Name,
+		baseURL + cik + "/" + secID + "/" + name,
 	)
 	if err != nil {
 		return nil, err
@@ -66,26 +65,26 @@ func GetFileContent(file *models.File) ([]byte, error) {
 	return data, nil
 }
 
-func handleFilingsResponse(res *http.Response) (*models.FilingsResponse, error) {
+func handleFilingsResponse(res *http.Response) (*FilingsResponse, error) {
 	defer res.Body.Close()
 	bodyBytes, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}
-	body := &models.FilingsResponse{}
+	body := &FilingsResponse{}
 	if err = json.Unmarshal(bodyBytes, &body); err != nil {
 		return nil, err
 	}
 	return body, nil
 }
 
-func handleFilesResponse(res *http.Response) (*models.FilesResponse, error) {
+func handleFilesResponse(res *http.Response) (*FilesResponse, error) {
 	defer res.Body.Close()
 	bodyBytes, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}
-	body := models.FilesResponse{}
+	body := FilesResponse{}
 	if err = json.Unmarshal(bodyBytes, &body); err != nil {
 		return nil, err
 	}
@@ -104,6 +103,7 @@ func buildRequest(urlStr string) (*http.Request, error) {
 }
 
 func sendRequest(req *http.Request) (*http.Response, error) {
+	time.Sleep(100 * time.Millisecond)
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {

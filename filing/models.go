@@ -1,4 +1,4 @@
-package models
+package filing
 
 import "time"
 
@@ -11,8 +11,9 @@ type Filing struct {
 	ID             int
 	Company        *Company
 	SECID          string
+	RawID          string
 	Form           string
-	Size           int
+	File           *File
 	FilingDate     time.Time
 	ReportDate     time.Time
 	AcceptanceDate time.Time
@@ -20,8 +21,6 @@ type Filing struct {
 
 type File struct {
 	Name         string
-	Filing       *Filing
-	Size         int
 	LastModified time.Time
 	Content      []byte
 }
@@ -44,7 +43,6 @@ type APIRecent struct {
 	AcceptanceDateTime []string `json:"acceptanceDateTime"`
 	ReportDate         []string `json:"reportDate"`
 	Form               []string `json:"form"`
-	Size               []int    `json:"size"`
 }
 
 type FilesResponse struct {
@@ -57,6 +55,5 @@ type Directory struct {
 
 type Item struct {
 	Name         string `json:"name"`
-	Size         string `json:"size"`
 	LastModified string `json:"last-modified"`
 }

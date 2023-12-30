@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/sec-data-pipeline/extractor/models"
+	"github.com/sec-data-pipeline/extractor/filing"
 )
 
 type Bucket struct {
@@ -35,11 +35,11 @@ func NewBucket() (*Bucket, error) {
 	return &Bucket{name: bucket, client: client}, nil
 }
 
-func (bucket *Bucket) PutObject(file *models.File) error {
+func (bucket *Bucket) PutObject(fil *filing.Filing) error {
 	input := &s3.PutObjectInput{
 		Bucket: aws.String(bucket.name),
-		Key:    aws.String(file.Filing.SECID + "/" + file.Name),
-		Body:   bytes.NewReader(file.Content),
+		Key:    aws.String(fil.SECID + filing.GetFileExtension(fil.File.Name)),
+		Body:   bytes.NewReader(fil.File.Content),
 	}
 	_, err := bucket.client.PutObject(input)
 	if err != nil {
