@@ -75,8 +75,7 @@ func handleFilingsResponse(res *http.Response) (*filingsResponse, error) {
 	body := &filingsResponse{}
 	if err = json.Unmarshal(bodyBytes, &body); err != nil {
 		return nil, errors.New(
-			"Could not process JSON into struct filingsResponse\n" +
-				"json.Unmarshal threw: '" + err.Error() + "'\n" + string(bodyBytes),
+			"Could not process JSON into struct filingsResponse, " + err.Error(),
 		)
 	}
 	return body, nil
@@ -91,8 +90,7 @@ func handleFilesResponse(res *http.Response) (*filesResponse, error) {
 	body := filesResponse{}
 	if err = json.Unmarshal(bodyBytes, &body); err != nil {
 		return nil, errors.New(
-			"Could not process JSON into struct filesResponse\n" +
-				"json.Unmarshal threw: '" + err.Error() + "'\n" + string(bodyBytes),
+			"Could not process JSON into struct filesResponse, " + err.Error(),
 		)
 	}
 	return &body, nil
@@ -110,7 +108,7 @@ func buildRequest(urlStr string) (*http.Request, error) {
 }
 
 func sendRequest(req *http.Request) (*http.Response, error) {
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(200 * time.Millisecond)
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {

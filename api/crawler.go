@@ -20,7 +20,7 @@ func getMainFileName(b []byte) (string, error) {
 		}
 		return getFile(elem)
 	}
-	return "", errors.New("Main file couldn't be found")
+	return "", errors.New("Checked all rows in tables and found no match")
 }
 
 func getTables(document *html.Node) ([]*html.Node, error) {
@@ -43,7 +43,7 @@ func findMatchingRow(table *html.Node) (*html.Node, error) {
 	var row *html.Node
 	var crawler func(node *html.Node)
 	crawler = func(node *html.Node) {
-		if node.Type == html.TextNode && len(node.Data) > 3 && node.Data[:3] == "10-" {
+		if node.Type == html.TextNode && node.Data == "1" {
 			row = node.Parent.Parent
 		}
 		for child := node.FirstChild; child != nil; child = child.NextSibling {
@@ -72,7 +72,7 @@ func getFile(node *html.Node) (string, error) {
 	}
 	crawler(node)
 	if len(result) < 1 {
-		return "", errors.New("String couldn't be found")
+		return "", errors.New("String could not be found in selected row")
 	}
 	return result, nil
 }
