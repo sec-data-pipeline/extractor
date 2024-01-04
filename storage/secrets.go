@@ -3,7 +3,6 @@ package storage
 import (
 	"encoding/json"
 	"errors"
-	"os"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -18,24 +17,10 @@ type Secrets struct {
 	DBName string `json:"DB_NAME"`
 }
 
-func GetAWSConnParams() (*DBConnParams, error) {
-	region := os.Getenv("REGION")
-	if len(region) < 1 {
-		return nil, errors.New("Environment variable 'REGION' must be specified")
-	}
-	awsSession, err := session.NewSession(&aws.Config{
-		Region: aws.String(region),
-	})
-	if err != nil {
-		return nil, err
-	}
+func GetAWSConnParams(awsSession *session.Session, secretsARN string) (*DBConnParams, error) {
 	client := secretsmanager.New(awsSession)
-	secretsARN := os.Getenv("SECRETS")
-	if len(secretsARN) < 1 {
-		return nil, errors.New("Environment variable 'SECRETS' must be specified")
-	}
 	input := &secretsmanager.GetSecretValueInput{
-		SecretId: aws.String(os.Getenv("SECRETS")),
+		SecretId: aws.String(secretsARN),
 	}
 	result, err := client.GetSecretValue(input)
 	if err != nil {

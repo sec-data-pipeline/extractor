@@ -3,8 +3,11 @@ package main
 import (
 	"errors"
 	"log"
+	"os"
 
-	"github.com/sec-data-pipeline/extractor/filing"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/sec-data-pipeline/extractor/api"
 	"github.com/sec-data-pipeline/extractor/storage"
 )
 
@@ -17,77 +20,61 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		for _, company := range companies {
-			filings, err := getMissingFilings(&company)
+		for _, cmp := range companies {
+			filingIDs, err := db.GetFilingIDs(cmp)
+			if err != nil {
+				panic(err)
+			}
+			filings, err := api.GetNewFilings(cmp.CIK, filingIDs)
 			if err != nil {
 				log.Println(err.Error())
 				continue
 			}
-			for _, fil := range filings {
-				err := extendFiling(&company, &fil)
+			for _, flng := range filings {
+				file, err := api.GetMainFile(cmp.CIK, flng)
 				if err != nil {
 					log.Println(err.Error())
 					continue
 				}
-				err = db.InsertFiling(&fil)
+				err = db.InsertFiling(
+					cmp.ID,
+					flng.SECID,
+					flng.Form,
+					file.Name,
+					flng.FilingDate,
+					flng.ReportDate,
+					flng.AcceptanceDate,
+					file.LastModified,
+				)
 				if err != nil {
 					log.Println(err.Error())
 					continue
 				}
-				err = archive.PutObject(&fil)
+				err = archive.PutObject(flng.SECID+file.Extension, file.Content)
 				if err != nil {
 					log.Println(err.Error())
 				}
 			}
 		}
 	}
-}
-
-func getMissingFilings(company *filing.Company) ([]filing.Filing, error) {
-	filingsData, err := filing.GetFilingsData(company.CIK)
-	if err != nil {
-		return nil, err
-	}
-	newFilings := filing.TransfromFilings(filingsData)
-	localFilings, err := db.GetFilings(company)
-	return filing.MissingFilings(localFilings, newFilings), nil
-}
-
-func extendFiling(company *filing.Company, fil *filing.Filing) error {
-	fil.Company = company
-	indexFile := fil.RawID + "-index.html"
-	fileBytes, err := filing.GetFileContent(fil.Company.CIK, fil.SECID, indexFile)
-	if err != nil {
-		return err
-	}
-	mainFile, err := filing.GetMainFileName(fileBytes)
-	if err != nil {
-		return err
-	}
-	filesData, err := filing.GetFilesData(fil.Company.CIK, fil.SECID)
-	if err != nil {
-		return err
-	}
-	files := filing.TransformFiles(filesData)
-	for _, v := range files {
-		if mainFile == v.Name {
-			fil.File = &v
-			fil.File.Content, err = filing.GetFileContent(fil.Company.CIK, fil.SECID, fil.File.Name)
-			if err != nil {
-				log.Println(err.Error())
-				fil.File = nil
-			}
-			break
-		}
-	}
-	if fil.File == nil {
-		return errors.New("Main file: '" + mainFile + "' or it's content wasn't found")
-	}
-	return nil
 }
 
 func init() {
-	connParams, err := storage.GetAWSConnParams()
+	region := os.Getenv("REGION")
+	if len(region) < 1 {
+		panic(errors.New("Environment variable 'REGION' must be specified"))
+	}
+	awsSession, err := session.NewSession(&aws.Config{
+		Region: aws.String(region),
+	})
+	if err != nil {
+		panic(err)
+	}
+	secretsARN := os.Getenv("SECRETS")
+	if len(secretsARN) < 1 {
+		panic(errors.New("Environment variable 'SECRETS' must be specified"))
+	}
+	connParams, err := storage.GetAWSConnParams(awsSession, secretsARN)
 	if err != nil {
 		panic(err)
 	}
@@ -95,8 +82,9 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	archive, err = storage.NewBucket()
-	if err != nil {
-		panic(err)
+	archiveName := os.Getenv("ARCHIVE_BUCKET")
+	if len(archiveName) < 1 {
+		panic(errors.New("Environment variable 'ARCHIVE_BUCKET' must be specified"))
 	}
+	archive = storage.NewBucket(awsSession, archiveName)
 }

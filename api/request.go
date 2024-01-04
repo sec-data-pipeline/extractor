@@ -1,7 +1,8 @@
-package filing
+package api
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"time"
@@ -12,7 +13,7 @@ const (
 	apiURL  = "https://data.sec.gov/submissions/CIK"
 )
 
-func GetFilingsData(cik string) (*FilingsResponse, error) {
+func getFilingsData(cik string) (*filingsResponse, error) {
 	req, err := buildRequest(apiURL + cik + ".json")
 	if err != nil {
 		return nil, err
@@ -28,7 +29,7 @@ func GetFilingsData(cik string) (*FilingsResponse, error) {
 	return data, nil
 }
 
-func GetFilesData(cik string, secID string) (*FilesResponse, error) {
+func getFilesData(cik string, secID string) (*filesResponse, error) {
 	req, err := buildRequest(
 		baseURL + cik + "/" + secID + "/index.json",
 	)
@@ -46,7 +47,7 @@ func GetFilesData(cik string, secID string) (*FilesResponse, error) {
 	return data, nil
 }
 
-func GetFileContent(cik string, secID string, name string) ([]byte, error) {
+func getFileContent(cik string, secID string, name string) ([]byte, error) {
 	req, err := buildRequest(
 		baseURL + cik + "/" + secID + "/" + name,
 	)
@@ -65,28 +66,34 @@ func GetFileContent(cik string, secID string, name string) ([]byte, error) {
 	return data, nil
 }
 
-func handleFilingsResponse(res *http.Response) (*FilingsResponse, error) {
+func handleFilingsResponse(res *http.Response) (*filingsResponse, error) {
 	defer res.Body.Close()
 	bodyBytes, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}
-	body := &FilingsResponse{}
+	body := &filingsResponse{}
 	if err = json.Unmarshal(bodyBytes, &body); err != nil {
-		return nil, err
+		return nil, errors.New(
+			"Could not process JSON into struct filingsResponse\n" +
+				"json.Unmarshal threw: '" + err.Error() + "'\n" + string(bodyBytes),
+		)
 	}
 	return body, nil
 }
 
-func handleFilesResponse(res *http.Response) (*FilesResponse, error) {
+func handleFilesResponse(res *http.Response) (*filesResponse, error) {
 	defer res.Body.Close()
 	bodyBytes, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}
-	body := FilesResponse{}
+	body := filesResponse{}
 	if err = json.Unmarshal(bodyBytes, &body); err != nil {
-		return nil, err
+		return nil, errors.New(
+			"Could not process JSON into struct filesResponse\n" +
+				"json.Unmarshal threw: '" + err.Error() + "'\n" + string(bodyBytes),
+		)
 	}
 	return &body, nil
 }

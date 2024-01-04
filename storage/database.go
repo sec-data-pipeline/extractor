@@ -3,9 +3,9 @@ package storage
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
 	_ "github.com/lib/pq"
-	"github.com/sec-data-pipeline/extractor/filing"
 )
 
 type Database struct {
@@ -41,68 +41,53 @@ func NewDB(connParams *DBConnParams) (*Database, error) {
 	return &Database{db}, nil
 }
 
-func (db *Database) GetCompanies() ([]filing.Company, error) {
+func (db *Database) GetCompanies() ([]*company, error) {
 	stmt := `SELECT id, cik FROM company;`
-	rows, err := db.DB.Query(stmt)
+	rows, err := db.Query(stmt)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var companies []filing.Company
-	var tmp filing.Company
+	var companies []*company
 	for rows.Next() {
+		var tmp company
 		if err := rows.Scan(&tmp.ID, &tmp.CIK); err != nil {
 			return nil, err
 		}
-		companies = append(companies, tmp)
+		companies = append(companies, &tmp)
 	}
 	return companies, nil
 }
 
-func (db *Database) GetFilingCount() (int, error) {
-	stmt := `SELECT COUNT(*) FROM filing;`
-	row := db.QueryRow(stmt)
-	var count int
-	if err := row.Scan(&count); err != nil {
-		return 0, err
-	}
-	return count, nil
-}
-
-func (db *Database) GetLatestFiling() (*filing.Filing, error) {
-	stmt := `SELECT company.cik, filing.id, filing.sec_id 
-	FROM company, filing 
-	WHERE company.id = filing.company_id 
-	ORDER BY id DESC LIMIT 1;`
-	row := db.QueryRow(stmt)
-	var company filing.Company
-	filing := &filing.Filing{Company: &company}
-	if err := row.Scan(&company.CIK, &filing.ID, &filing.SECID); err != nil {
-		return nil, err
-	}
-	return filing, nil
-}
-
-func (db *Database) GetFilings(company *filing.Company) ([]filing.Filing, error) {
-	stmt := `SELECT filing.sec_id FROM filing, company 
-	WHERE company.id = filing.company_id AND company.cik = $1;`
-	rows, err := db.Query(stmt, company.CIK)
+func (db *Database) GetFilingIDs(cmp *company) ([]string, error) {
+	stmt := `SELECT sec_id FROM filing, company 
+	WHERE filing.company_id = company.id AND company.id = $1;`
+	rows, err := db.Query(stmt, cmp.ID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var filings []filing.Filing
-	var tmp filing.Filing
+	var ids []string
 	for rows.Next() {
-		if err := rows.Scan(&tmp.SECID); err != nil {
+		var tmp string
+		if err := rows.Scan(&tmp); err != nil {
 			return nil, err
 		}
-		filings = append(filings, tmp)
+		ids = append(ids, tmp)
 	}
-	return filings, nil
+	return ids, nil
 }
 
-func (db *Database) InsertFiling(filing *filing.Filing) error {
+func (db *Database) InsertFiling(
+	companyID int,
+	secID string,
+	form string,
+	originalFile string,
+	filingDate time.Time,
+	reportDate time.Time,
+	acceptanceDate time.Time,
+	lastModified time.Time,
+) error {
 	stmt := `INSERT INTO filing (
 		company_id,
 		sec_id,
@@ -115,14 +100,14 @@ func (db *Database) InsertFiling(filing *filing.Filing) error {
 	) VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`
 	_, err := db.Exec(
 		stmt,
-		filing.Company.ID,
-		filing.SECID,
-		filing.Form,
-		filing.File.Name,
-		filing.FilingDate,
-		filing.ReportDate,
-		filing.AcceptanceDate,
-		filing.File.LastModified,
+		companyID,
+		secID,
+		form,
+		originalFile,
+		filingDate,
+		reportDate,
+		acceptanceDate,
+		lastModified,
 	)
 	if err != nil {
 		return err

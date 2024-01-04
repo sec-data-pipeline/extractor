@@ -1,4 +1,4 @@
-package filing
+package api
 
 import (
 	"errors"
@@ -7,7 +7,7 @@ import (
 	"golang.org/x/net/html"
 )
 
-func GetMainFileName(b []byte) (string, error) {
+func getMainFileName(b []byte) (string, error) {
 	document, err := html.Parse(strings.NewReader(string(b)))
 	if err != nil {
 		return "", err

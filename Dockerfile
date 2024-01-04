@@ -6,7 +6,11 @@ COPY go.mod go.sum ./
 
 RUN go mod download
 
-COPY . .
+COPY main.go ./
+
+COPY storage ./storage
+
+COPY api ./api
 
 RUN go build -o ./bin/extractor
 
