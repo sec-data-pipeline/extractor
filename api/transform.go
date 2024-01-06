@@ -10,10 +10,7 @@ import (
 func transformFilings(data *filingsResponse) []*Filing {
 	var filings []*Filing
 	for i, v := range data.Filings.Recent.Form {
-		if len(v) < 4 {
-			continue
-		}
-		if v[:4] != "10-K" && v[:4] != "10-Q" {
+		if v != "10-K" && v != "10-Q" {
 			continue
 		}
 		var tmp Filing
