@@ -2,89 +2,65 @@ package main
 
 import (
 	"errors"
-	"log"
+	"fmt"
 	"os"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/sec-data-pipeline/extractor/api"
-	"github.com/sec-data-pipeline/extractor/storage"
+	"github.com/sec-data-pipeline/filing-extractor/external"
+	"github.com/sec-data-pipeline/filing-extractor/service"
+	"github.com/sec-data-pipeline/filing-extractor/storage"
 )
 
-var db *storage.Database
-var archive *storage.Bucket
+var extractor *service.Extractor
 
 func main() {
-	for {
-		companies, err := db.GetCompanies()
-		if err != nil {
-			panic(err)
-		}
-		for _, cmp := range companies {
-			filingIDs, err := db.GetFilingIDs(cmp)
-			if err != nil {
-				panic(err)
-			}
-			filings, err := api.GetNewFilings(cmp.CIK, filingIDs)
-			if err != nil {
-				log.Println(err.Error())
-				continue
-			}
-			for _, flng := range filings {
-				file, err := api.GetMainFile(cmp.CIK, flng)
-				if err != nil {
-					log.Println(err.Error())
-					continue
-				}
-				err = db.InsertFiling(
-					cmp.ID,
-					flng.SECID,
-					flng.Form,
-					file.Name,
-					flng.FilingDate,
-					flng.ReportDate,
-					flng.AcceptanceDate,
-					file.LastModified,
-				)
-				if err != nil {
-					log.Println(err.Error())
-					continue
-				}
-				err = archive.PutObject(flng.SECID+file.Extension, file.Content)
-				if err != nil {
-					log.Println(err.Error())
-				}
-			}
-		}
+	err := extractor.Run()
+	if err != nil {
+		panic(err)
 	}
 }
 
 func init() {
 	region := os.Getenv("REGION")
+	var secrets storage.Secrets
+	var archive storage.FileStorage
+	var logger storage.Logger
+	var err error
 	if len(region) < 1 {
-		panic(errors.New("Environment variable 'REGION' must be specified"))
+		secrets, err = storage.NewEnvLoader()
+		if err != nil {
+			panic(err)
+		}
+		archive = storage.NewFolder(envOrPanic("ARCHIVE_PATH"))
+		logger = storage.NewConsole()
+	} else {
+		awsSession, err := session.NewSession(&aws.Config{
+			Region: aws.String(region),
+		})
+		if err != nil {
+			panic(err)
+		}
+		secrets = storage.NewSecretsManager(awsSession, envOrPanic("SECRETS_ARN"))
+		archive = storage.NewS3Bucket(awsSession, envOrPanic("ARCHIVE_BUCKET"))
+		logger = storage.NewCloudWatch()
 	}
-	awsSession, err := session.NewSession(&aws.Config{
-		Region: aws.String(region),
-	})
+	connParams, err := secrets.GetConnParams()
 	if err != nil {
 		panic(err)
 	}
-	secretsARN := os.Getenv("SECRETS")
-	if len(secretsARN) < 1 {
-		panic(errors.New("Environment variable 'SECRETS' must be specified"))
-	}
-	connParams, err := storage.GetAWSConnParams(awsSession, secretsARN)
+	db, err := storage.NewPostgresConn(connParams)
 	if err != nil {
 		panic(err)
 	}
-	db, err = storage.NewDB(connParams)
-	if err != nil {
-		panic(err)
+	api := external.NewSECAPI()
+	extractor = service.NewExtractorService(api, db, archive, logger)
+}
+
+func envOrPanic(key string) string {
+	value := os.Getenv(key)
+	if len(value) < 1 {
+		panic(errors.New(fmt.Sprintf("Environment variable '%s' must be specified", key)))
 	}
-	archiveName := os.Getenv("ARCHIVE_BUCKET")
-	if len(archiveName) < 1 {
-		panic(errors.New("Environment variable 'ARCHIVE_BUCKET' must be specified"))
-	}
-	archive = storage.NewBucket(awsSession, archiveName)
+	return value
 }

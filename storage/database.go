@@ -8,11 +8,31 @@ import (
 	_ "github.com/lib/pq"
 )
 
-type Database struct {
+type company struct {
+	ID  int
+	CIK string
+}
+
+type Database interface {
+	GetCompanies() ([]*company, error)
+	GetFilingIDs(cmpID int) ([]string, error)
+	InsertFiling(
+		cmpID int,
+		secID string,
+		form string,
+		ogFile string,
+		filDate time.Time,
+		repDate time.Time,
+		acptDate time.Time,
+		lMDate time.Time,
+	) error
+}
+
+type postgresDB struct {
 	*sql.DB
 }
 
-type DBConnParams struct {
+type postgresConnParams struct {
 	DBHost string
 	DBPort string
 	DBName string
@@ -21,7 +41,7 @@ type DBConnParams struct {
 	SSL    string
 }
 
-func NewDB(connParams *DBConnParams) (*Database, error) {
+func NewPostgresConn(connParams *postgresConnParams) (*postgresDB, error) {
 	connStr := fmt.Sprintf(
 		"host=%s port=%s user=%s dbname=%s password=%s sslmode=%s",
 		connParams.DBHost,
@@ -38,10 +58,10 @@ func NewDB(connParams *DBConnParams) (*Database, error) {
 	if err := db.Ping(); err != nil {
 		return nil, err
 	}
-	return &Database{db}, nil
+	return &postgresDB{db}, nil
 }
 
-func (db *Database) GetCompanies() ([]*company, error) {
+func (db *postgresDB) GetCompanies() ([]*company, error) {
 	stmt := `SELECT id, cik FROM company;`
 	rows, err := db.Query(stmt)
 	if err != nil {
@@ -59,10 +79,10 @@ func (db *Database) GetCompanies() ([]*company, error) {
 	return companies, nil
 }
 
-func (db *Database) GetFilingIDs(cmp *company) ([]string, error) {
+func (db *postgresDB) GetFilingIDs(cmpID int) ([]string, error) {
 	stmt := `SELECT sec_id FROM filing, company 
 	WHERE filing.company_id = company.id AND company.id = $1;`
-	rows, err := db.Query(stmt, cmp.ID)
+	rows, err := db.Query(stmt, cmpID)
 	if err != nil {
 		return nil, err
 	}
@@ -78,15 +98,15 @@ func (db *Database) GetFilingIDs(cmp *company) ([]string, error) {
 	return ids, nil
 }
 
-func (db *Database) InsertFiling(
-	companyID int,
+func (db *postgresDB) InsertFiling(
+	cmpID int,
 	secID string,
 	form string,
-	originalFile string,
-	filingDate time.Time,
-	reportDate time.Time,
-	acceptanceDate time.Time,
-	lastModified time.Time,
+	ogFile string,
+	filDate time.Time,
+	repDate time.Time,
+	acptDate time.Time,
+	lMDate time.Time,
 ) error {
 	stmt := `INSERT INTO filing (
 		company_id,
@@ -98,17 +118,7 @@ func (db *Database) InsertFiling(
 		acceptance_date,
 		last_modified_date
 	) VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`
-	_, err := db.Exec(
-		stmt,
-		companyID,
-		secID,
-		form,
-		originalFile,
-		filingDate,
-		reportDate,
-		acceptanceDate,
-		lastModified,
-	)
+	_, err := db.Exec(stmt, cmpID, secID, form, ogFile, filDate, repDate, acptDate, lMDate)
 	if err != nil {
 		return err
 	}
