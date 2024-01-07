@@ -1,9 +1,9 @@
 package external
 
 import (
+	"database/sql"
 	"errors"
 	"strings"
-	"time"
 )
 
 type API interface {
@@ -14,9 +14,9 @@ type API interface {
 type Filing struct {
 	secID          string
 	Form           string
-	FilingDate     time.Time
-	ReportDate     time.Time
-	AcceptanceDate time.Time
+	FilingDate     sql.NullTime
+	ReportDate     sql.NullTime
+	AcceptanceDate sql.NullTime
 }
 
 func (f *Filing) GetID() string {
@@ -26,7 +26,7 @@ func (f *Filing) GetID() string {
 type file struct {
 	Name         string
 	Content      []byte
-	LastModified time.Time
+	LastModified sql.NullTime
 }
 
 func (f *file) GetExtension() (string, error) {

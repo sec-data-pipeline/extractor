@@ -1,6 +1,7 @@
 package external
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"io"
@@ -180,19 +181,19 @@ func (api *secAPI) transformFilings(data *filingsResponse) []*Filing {
 		tmp.Form = v
 		fd, err := time.Parse("2006-01-02", data.Filings.Recent.FilingDate[i])
 		if err != nil {
-			fd = time.Time{}
+			tmp.AcceptanceDate = sql.NullTime{Valid: false}
 		}
-		tmp.FilingDate = fd
+		tmp.AcceptanceDate = sql.NullTime{Time: fd, Valid: true}
 		ad, err := time.Parse(time.RFC3339, data.Filings.Recent.AcceptanceDateTime[i])
 		if err != nil {
-			ad = time.Time{}
+			tmp.AcceptanceDate = sql.NullTime{Valid: false}
 		}
-		tmp.AcceptanceDate = ad
+		tmp.AcceptanceDate = sql.NullTime{Time: ad, Valid: true}
 		rd, err := time.Parse("2006-01-02", data.Filings.Recent.ReportDate[i])
 		if err != nil {
-			rd = time.Time{}
+			tmp.ReportDate = sql.NullTime{Valid: false}
 		}
-		tmp.ReportDate = rd
+		tmp.ReportDate = sql.NullTime{Time: rd, Valid: true}
 		filings = append(filings, &tmp)
 	}
 	return filings
@@ -205,9 +206,9 @@ func (api *secAPI) transformFiles(data *filesResponse) []*file {
 		tmp.Name = v.Name
 		lm, err := time.Parse("2006-01-02 15:04:05", v.LastModified)
 		if err != nil {
-			lm = time.Time{}
+			tmp.LastModified = sql.NullTime{Valid: false}
 		}
-		tmp.LastModified = lm
+		tmp.LastModified = sql.NullTime{Time: lm, Valid: true}
 		files = append(files, &tmp)
 	}
 	return files

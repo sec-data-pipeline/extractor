@@ -3,7 +3,6 @@ package storage
 import (
 	"database/sql"
 	"fmt"
-	"time"
 
 	_ "github.com/lib/pq"
 )
@@ -21,10 +20,10 @@ type Database interface {
 		secID string,
 		form string,
 		ogFile string,
-		filDate time.Time,
-		repDate time.Time,
-		acptDate time.Time,
-		lMDate time.Time,
+		filDate sql.NullTime,
+		repDate sql.NullTime,
+		acptDate sql.NullTime,
+		lMDate sql.NullTime,
 	) error
 }
 
@@ -103,10 +102,10 @@ func (db *postgresDB) InsertFiling(
 	secID string,
 	form string,
 	ogFile string,
-	filDate time.Time,
-	repDate time.Time,
-	acptDate time.Time,
-	lMDate time.Time,
+	filDate sql.NullTime,
+	repDate sql.NullTime,
+	acptDate sql.NullTime,
+	lMDate sql.NullTime,
 ) error {
 	stmt := `INSERT INTO filing (
 		company_id,
