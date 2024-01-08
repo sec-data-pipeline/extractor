@@ -6,14 +6,14 @@ import (
 )
 
 type Extractor struct {
-	api     external.API
+	api     *external.API
 	db      storage.Database
 	archive storage.FileStorage
 	logger  storage.Logger
 }
 
 func NewExtractorService(
-	api external.API,
+	api *external.API,
 	db storage.Database,
 	archive storage.FileStorage,
 	logger storage.Logger,
@@ -54,7 +54,7 @@ func (s *Extractor) Run() error {
 				mainFile.Name,
 				fil.FilingDate,
 				fil.ReportDate,
-				fil.AcceptanceDate,
+				fil.AcceptDate,
 				mainFile.LastModified,
 			)
 			if err != nil {

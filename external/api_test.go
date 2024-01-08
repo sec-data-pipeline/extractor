@@ -1,6 +1,10 @@
 package external
 
-import "testing"
+import (
+	"errors"
+	"net/http"
+	"testing"
+)
 
 func TestGetID(t *testing.T) {
 	var tests = []struct {
@@ -66,4 +70,38 @@ func TestGetExtension(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetFilings(t *testing.T) {
+
+}
+
+func TestGetMainFile(t *testing.T) {
+
+}
+
+type testClient struct {
+	data  [][]byte
+	index int
+}
+
+func (c *testClient) buildRequest(urlStr string) (*http.Request, error) {
+	return nil, nil
+}
+
+func (c *testClient) sendRequest(req *http.Request) (*http.Response, error) {
+	return nil, nil
+}
+
+func (c *testClient) getData(res *http.Response) ([]byte, error) {
+	if c.index >= len(c.data) {
+		return nil, errors.New("Test data out of range")
+	}
+	data := c.data[c.index]
+	c.index++
+	return data, nil
+}
+
+func newTestAPI(data [][]byte) *API {
+	return &API{client: &testClient{data: data, index: 0}}
 }

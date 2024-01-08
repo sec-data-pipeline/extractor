@@ -17,11 +17,3 @@ func TestGetFirstRow(t *testing.T) {
 func TestGetTables(t *testing.T) {
 
 }
-
-func TestTransformFilings(t *testing.T) {
-
-}
-
-func TestTransformFiles(t *testing.T) {
-
-}

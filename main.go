@@ -53,7 +53,7 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	api := external.NewSECAPI()
+	api := external.NewAPI()
 	extractor = service.NewExtractorService(api, db, archive, logger)
 }
 
