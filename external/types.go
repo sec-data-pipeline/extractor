@@ -28,6 +28,5 @@ type directory struct {
 
 type item struct {
 	Name         string `json:"name"`
-	Size         string `json:"size"`
 	LastModified string `json:"last-modified"`
 }

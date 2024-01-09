@@ -47,7 +47,7 @@ func getFirstRow(table *html.Node) (*html.Node, error) {
 	var row *html.Node
 	var crawler func(node *html.Node)
 	crawler = func(node *html.Node) {
-		if node.Type == html.TextNode && node.Data == "1" {
+		if node.Type == html.TextNode && node.Data == "1" && row == nil {
 			row = node.Parent.Parent
 		}
 		for child := node.FirstChild; child != nil; child = child.NextSibling {
