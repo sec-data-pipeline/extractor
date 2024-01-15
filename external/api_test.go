@@ -124,7 +124,6 @@ func TestGetMainFile(t *testing.T) {
 	type mock struct {
 		firstRes  []byte
 		secondRes []byte
-		thirdeRes []byte
 	}
 	var mocks []mock = []mock{
 		{
@@ -144,42 +143,7 @@ func TestGetMainFile(t *testing.T) {
 					}
 				}
 			`),
-			secondRes: []byte(`
-				<table>
-					<tr>
-						<td>1</td>
-						<td>k2004.htm</td>
-					</tr>
-				</table>
-			`),
-			thirdeRes: []byte(`test`),
-		},
-		{
-			firstRes: []byte(`
-				{
-					"directory":{
-						"item":[
-							{
-								"last-modified": "2004-09-10 16:47:30",
-								"name":"ex32.txt"
-							},
-							{
-								"last-modified": "2004-09-10 16:47:30",
-								"name":"k2004.htm"
-							}
-						]
-					}
-				}
-			`),
-			secondRes: []byte(`
-				<table>
-					<tr>
-						<td>2</td>
-						<td>k2004.htm</td>
-					</tr>
-				</table>
-			`),
-			thirdeRes: []byte(`test`),
+			secondRes: []byte(`test`),
 		},
 		{
 			firstRes: []byte(`
@@ -194,29 +158,22 @@ func TestGetMainFile(t *testing.T) {
 					}
 				}
 			`),
-			secondRes: []byte(`
-				<table>
-					<tr>
-						<td>1</td>
-						<td>k2004.htm</td>
-					</tr>
-				</table>
-			`),
-			thirdeRes: []byte(`test`),
+			secondRes: []byte(`test`),
 		},
 		{
 			firstRes: []byte(`
 				{
 					"directory":{
-						{
-							"last-modified": "2004-09-10 16:47:30",
-							"name":"ex32.txt"
-						}
+						"item":[
+							{
+								"last-modified": "2004-09-10 16:47:30",
+								"name":"main.htm"
+						 	}
+						]
 					}
 				}
 			`),
-			secondRes: []byte(``),
-			thirdeRes: []byte(`test`),
+			secondRes: []byte(`test`),
 		},
 	}
 	var tests = []struct {
@@ -235,19 +192,28 @@ func TestGetMainFile(t *testing.T) {
 					Time:  time.Date(2004, time.September, 10, 16, 47, 30, 0, time.UTC),
 					Valid: true,
 				},
-				Content: mocks[0].thirdeRes,
+				Content: mocks[0].secondRes,
 			},
 		},
-		{"Main file not in first row", mocks[1], errors.New(""), &file{}},
-		{"Main file not in file list", mocks[2], errors.New(""), &file{}},
-		{"Invalid JSON", mocks[3], errors.New(""), &file{}},
+		{"Main file not in file list", mocks[1], errors.New(""), &file{}},
+		{
+			"Main file in single file list",
+			mocks[2],
+			nil,
+			&file{Name: "main.htm", LastModified: sql.NullTime{
+				Time:  time.Date(2004, time.September, 10, 16, 47, 30, 0, time.UTC),
+				Valid: true,
+			},
+				Content: mocks[0].secondRes,
+			},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			api := newTestAPI(
-				[][]byte{test.mockRes.firstRes, test.mockRes.secondRes, test.mockRes.thirdeRes},
+				[][]byte{test.mockRes.firstRes, test.mockRes.secondRes},
 			)
-			got, err := api.GetMainFile("", &Filing{})
+			got, err := api.GetMainFile("", &Filing{mainFile: test.want.Name})
 			if err != nil && test.err == nil {
 				t.Errorf(err.Error())
 				return

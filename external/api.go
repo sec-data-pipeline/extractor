@@ -58,21 +58,12 @@ func (api *API) GetMainFile(cik string, fil *Filing) (*file, error) {
 	if err := json.Unmarshal(data, filRes); err != nil {
 		return nil, errors.New("Could not process JSON into struct filesResponse, " + err.Error())
 	}
-	indexFile := fil.secID + "-index.html"
-	content, err := api.getFileContent(cik, fil.secID, indexFile)
-	if err != nil {
-		return nil, errors.New("Could not get content of index file, " + err.Error())
-	}
-	mfName, err := getMainFileName(content)
-	if err != nil {
-		return nil, err
-	}
 	files := transformFiles(filRes)
-	mainFile, err := getFile(files, mfName)
+	mainFile, err := getFile(files, fil.mainFile)
 	if err != nil {
 		return nil, err
 	}
-	mainFile.Content, err = api.getFileContent(cik, fil.GetID(), mfName)
+	mainFile.Content, err = api.getFileContent(cik, fil.GetID(), fil.mainFile)
 	if err != nil {
 		return nil, errors.New("Could not get content of main file, " + err.Error())
 	}
@@ -97,6 +88,7 @@ func (api *API) getFileContent(cik string, secID string, name string) ([]byte, e
 
 type Filing struct {
 	secID      string
+	mainFile   string
 	Form       string
 	FilingDate sql.NullTime
 	ReportDate sql.NullTime

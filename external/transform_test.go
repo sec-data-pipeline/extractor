@@ -23,6 +23,7 @@ func TestTransformFilings(t *testing.T) {
 						FilingDate:   []string{},
 						ReportDate:   []string{},
 						Form:         []string{},
+						PrimDoc:      []string{},
 					},
 				},
 			},
@@ -38,6 +39,7 @@ func TestTransformFilings(t *testing.T) {
 						FilingDate:   []string{"", "", ""},
 						ReportDate:   []string{"", "", ""},
 						Form:         []string{"11-K", "10-K/A", "8-Q"},
+						PrimDoc:      []string{"test.htm", "foo.htm", "hello.htm"},
 					},
 				},
 			},
@@ -53,6 +55,7 @@ func TestTransformFilings(t *testing.T) {
 						ReportDate:   []string{"2023-12-31", "", ""},
 						FilingDate:   []string{"2008-01-02", "", ""},
 						Form:         []string{"10-K", "10-K/A", "8-Q"},
+						PrimDoc:      []string{"test.htm", "foo.htm", "hello.htm"},
 					},
 				},
 			},
@@ -71,7 +74,8 @@ func TestTransformFilings(t *testing.T) {
 						Time:  time.Date(2008, time.January, 2, 0, 0, 0, 0, time.UTC),
 						Valid: true,
 					},
-					Form: "10-K",
+					Form:     "10-K",
+					mainFile: "test.htm",
 				},
 			},
 		},
@@ -113,6 +117,14 @@ func TestTransformFilings(t *testing.T) {
 							"2008-01-02",
 						},
 						Form: []string{"10-K", "10-K/A", "8-Q", "10-Q", "8-Q", "10-K"},
+						PrimDoc: []string{
+							"test.htm",
+							"foo.htm",
+							"hello.htm",
+							"baz.htm",
+							"bar.htm",
+							"filing.htm",
+						},
 					},
 				},
 			},
@@ -131,7 +143,8 @@ func TestTransformFilings(t *testing.T) {
 						Time:  time.Date(2008, time.January, 2, 0, 0, 0, 0, time.UTC),
 						Valid: true,
 					},
-					Form: "10-K",
+					Form:     "10-K",
+					mainFile: "test.htm",
 				},
 				{
 					secID: "FourthFiling-1043984",
@@ -147,7 +160,8 @@ func TestTransformFilings(t *testing.T) {
 						Time:  time.Date(2008, time.January, 2, 0, 0, 0, 0, time.UTC),
 						Valid: true,
 					},
-					Form: "10-Q",
+					Form:     "10-Q",
+					mainFile: "baz.htm",
 				},
 				{
 					secID: "SixthFiling-1043984",
@@ -163,7 +177,8 @@ func TestTransformFilings(t *testing.T) {
 						Time:  time.Date(2008, time.January, 2, 0, 0, 0, 0, time.UTC),
 						Valid: true,
 					},
-					Form: "10-K",
+					Form:     "10-K",
+					mainFile: "filing.htm",
 				},
 			},
 		},
@@ -193,6 +208,14 @@ func TestTransformFilings(t *testing.T) {
 						got.secID,
 						got.Form,
 						test.want[i].Form,
+					)
+				}
+				if got.mainFile != test.want[i].mainFile {
+					t.Errorf(
+						"for filing: %s, main file got: %s, want: %s",
+						got.secID,
+						got.mainFile,
+						test.want[i].mainFile,
 					)
 				}
 			}

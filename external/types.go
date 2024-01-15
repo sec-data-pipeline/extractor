@@ -16,6 +16,7 @@ type recent struct {
 	AcceptDate   []string `json:"acceptanceDateTime"`
 	ReportDate   []string `json:"reportDate"`
 	Form         []string `json:"form"`
+	PrimDoc      []string `json:"primaryDocument"`
 }
 
 type filesResponse struct {

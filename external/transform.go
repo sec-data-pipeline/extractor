@@ -11,8 +11,17 @@ func transformFilings(data *filingsResponse) []*Filing {
 		if v != "10-K" && v != "10-Q" {
 			continue
 		}
+		test := &file{Name: data.Filings.Recent.PrimDoc[i]}
+		check, err := test.GetExtension()
+		if err != nil {
+			continue
+		}
+		if check != ".htm" {
+			continue
+		}
 		fil := &Filing{
 			secID:      data.Filings.Recent.AccessNumber[i],
+			mainFile:   data.Filings.Recent.PrimDoc[i],
 			Form:       v,
 			FilingDate: parseNullTime("2006-01-02", data.Filings.Recent.FilingDate[i]),
 			AcceptDate: parseNullTime(time.RFC3339, data.Filings.Recent.AcceptDate[i]),
