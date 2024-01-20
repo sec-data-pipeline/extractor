@@ -1,8 +1,8 @@
 package service
 
 import (
-	"github.com/sec-data-pipeline/filing-extractor/external"
-	"github.com/sec-data-pipeline/filing-extractor/storage"
+	"github.com/sec-data-pipeline/extractor/external"
+	"github.com/sec-data-pipeline/extractor/storage"
 )
 
 type Extractor struct {

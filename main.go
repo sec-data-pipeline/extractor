@@ -7,9 +7,9 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/sec-data-pipeline/filing-extractor/external"
-	"github.com/sec-data-pipeline/filing-extractor/service"
-	"github.com/sec-data-pipeline/filing-extractor/storage"
+	"github.com/sec-data-pipeline/extractor/external"
+	"github.com/sec-data-pipeline/extractor/service"
+	"github.com/sec-data-pipeline/extractor/storage"
 )
 
 var extractor *service.Extractor
@@ -22,29 +22,17 @@ func main() {
 }
 
 func init() {
-	region := os.Getenv("REGION")
-	var secrets storage.Secrets
-	var archive storage.FileStorage
-	var logger storage.Logger
 	var err error
-	if len(region) < 1 {
-		secrets, err = storage.NewEnvLoader()
-		if err != nil {
-			panic(err)
-		}
-		archive = storage.NewFolder(envOrPanic("ARCHIVE_PATH"))
-		logger = storage.NewConsole()
-	} else {
-		awsSession, err := session.NewSession(&aws.Config{
-			Region: aws.String(region),
-		})
-		if err != nil {
-			panic(err)
-		}
-		secrets = storage.NewSecretsManager(awsSession, envOrPanic("SECRETS_ARN"))
-		archive = storage.NewS3Bucket(awsSession, envOrPanic("ARCHIVE_BUCKET"))
-		logger = storage.NewCloudWatch()
+	region := envOrPanic("REGION")
+	awsSession, err := session.NewSession(&aws.Config{
+		Region: aws.String(region),
+	})
+	if err != nil {
+		panic(err)
 	}
+	var secrets storage.Secrets = storage.NewSecretsManager(awsSession, envOrPanic("SECRETS_ARN"))
+	var archive storage.FileStorage = storage.NewS3Bucket(awsSession, envOrPanic("ARCHIVE_BUCKET"))
+	var logger storage.Logger = storage.NewCloudWatch()
 	connParams, err := secrets.GetConnParams()
 	if err != nil {
 		panic(err)

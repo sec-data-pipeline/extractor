@@ -3,12 +3,10 @@ package storage
 import (
 	"encoding/json"
 	"errors"
-	"os"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/secretsmanager"
-	"github.com/joho/godotenv"
 )
 
 type Secrets interface {
@@ -56,53 +54,4 @@ func (s *secretsManager) GetConnParams() (*postgresConnParams, error) {
 		SSL:    "require",
 	}
 	return connParams, nil
-}
-
-type envLoader struct{}
-
-func NewEnvLoader() (*envLoader, error) {
-	err := godotenv.Load()
-	if err != nil {
-		return nil, err
-	}
-	return &envLoader{}, nil
-}
-
-func (l *envLoader) GetConnParams() (*postgresConnParams, error) {
-	dbHost, err := getEnv("DB_HOST")
-	if err != nil {
-		return nil, err
-	}
-	dbPort, err := getEnv("DB_PORT")
-	if err != nil {
-		return nil, err
-	}
-	dbName, err := getEnv("DB_NAME")
-	if err != nil {
-		return nil, err
-	}
-	dbUser, err := getEnv("DB_USER")
-	if err != nil {
-		return nil, err
-	}
-	dbPass, err := getEnv("DB_PASS")
-	if err != nil {
-		return nil, err
-	}
-	return &postgresConnParams{
-		DBHost: dbHost,
-		DBPort: dbPort,
-		DBName: dbName,
-		DBUser: dbUser,
-		DBPass: dbPass,
-		SSL:    "disable",
-	}, nil
-}
-
-func getEnv(key string) (string, error) {
-	value := os.Getenv(key)
-	if len(value) < 1 {
-		return "", errors.New("Environment variable '" + key + "' must be specified")
-	}
-	return value, nil
 }
