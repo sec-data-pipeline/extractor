@@ -31,24 +31,24 @@ type postgresDB struct {
 	*sql.DB
 }
 
-type postgresConnParams struct {
-	DBHost string
-	DBPort string
-	DBName string
-	DBUser string
-	DBPass string
-	SSL    string
+type postgresParams struct {
+	DBHost string `json:"DB_HOST"`
+	DBPort string `json:"DB_PORT"`
+	DBName string `json:"DB_NAME"`
+	DBUser string `json:"DB_USER"`
+	DBPass string `json:"DB_PASS"`
+	ssl    string
 }
 
-func NewPostgresConn(connParams *postgresConnParams) (*postgresDB, error) {
+func NewPostgres(params *postgresParams) (*postgresDB, error) {
 	connStr := fmt.Sprintf(
 		"host=%s port=%s user=%s dbname=%s password=%s sslmode=%s",
-		connParams.DBHost,
-		connParams.DBPort,
-		connParams.DBUser,
-		connParams.DBName,
-		connParams.DBPass,
-		connParams.SSL,
+		params.DBHost,
+		params.DBPort,
+		params.DBUser,
+		params.DBName,
+		params.DBPass,
+		params.ssl,
 	)
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
