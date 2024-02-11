@@ -38,10 +38,6 @@ func (s *secretsManager) GetConnParams() (*postgresParams, error) {
 	if err := json.Unmarshal([]byte(*value.SecretString), params); err != nil {
 		return nil, err
 	}
-	if len(params.DBHost) < 6 {
-		return nil, errors.New("'DB_HOST' secret corrupted")
-	}
-	params.DBHost = params.DBHost[:len(params.DBHost)-5]
 	params.ssl = "require"
 	return params, nil
 }
