@@ -1,5 +1,5 @@
 run: build
-	@./bin/filing-extractor
+	@./bin/extractor
 
 build:
-	@go build -o ./bin/filing-extractor
+	@go build -o ./bin/extractor

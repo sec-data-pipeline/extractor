@@ -22,22 +22,35 @@ func main() {
 }
 
 func init() {
+	var db storage.Database
+	var secrets storage.Secrets
+	var archive storage.FileStorage
+	var logger storage.Logger
 	var err error
-	region := envOrPanic("REGION")
-	awsSession, err := session.NewSession(&aws.Config{
-		Region: aws.String(region),
-	})
+	region := os.Getenv("REGION")
+	if len(region) > 0 {
+		awsSession, err := session.NewSession(&aws.Config{
+			Region: aws.String(region),
+		})
+		if err != nil {
+			panic(err)
+		}
+		secrets = storage.NewSecretsManager(awsSession, envOrPanic("SECRETS"))
+		archive = storage.NewS3Bucket(awsSession, envOrPanic("ARCHIVE_BUCKET"))
+		logger = storage.NewCloudWatch()
+	} else {
+		secrets, err = storage.NewEnvLoader()
+		if err != nil {
+			panic(err)
+		}
+		archive = storage.NewFolder(envOrPanic("DEST"))
+		logger = storage.NewConsole()
+	}
+	params, err := secrets.GetConnParams()
 	if err != nil {
 		panic(err)
 	}
-	var secrets storage.Secrets = storage.NewSecretsManager(awsSession, envOrPanic("SECRETS_ARN"))
-	var archive storage.FileStorage = storage.NewS3Bucket(awsSession, envOrPanic("ARCHIVE_BUCKET"))
-	var logger storage.Logger = storage.NewCloudWatch()
-	connParams, err := secrets.GetConnParams()
-	if err != nil {
-		panic(err)
-	}
-	db, err := storage.NewPostgresConn(connParams)
+	db, err = storage.NewPostgres(params)
 	if err != nil {
 		panic(err)
 	}
