@@ -44,25 +44,7 @@ func NewFolder(path string) *folder {
 }
 
 func (f *folder) PutObject(key string, data []byte) error {
-	err := buildPath(f.path + "/" + key)
-	if err != nil {
-		return err
-	}
-	err = os.WriteFile(f.path+"/"+key, data, 0666)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func buildPath(path string) error {
-	var i int = len(path) - 1
-	for ; i <= 0; i-- {
-		if string(path[i]) == "/" {
-			break
-		}
-	}
-	err := os.MkdirAll(path[i:], os.ModePerm)
+	err := os.WriteFile(f.path+"/"+key, data, 0666)
 	if err != nil {
 		return err
 	}
